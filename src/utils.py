@@ -25,32 +25,34 @@ def get_greeting(date: str) -> str:
     return greeting
 
 
-def get_data_frame_from_excel_file(path_to_excel_file: str) -> pd.DataFrame:
+def get_data_frame_from_excel_file(path_to_excel_file: str) -> dict:
     """ Принимает путь до xlsx-файла, возвращает DataFrame """
 
     try:
-        transactions_df = pd.read_excel(path_to_excel_file)
+        transactions = pd.read_excel(path_to_excel_file).to_dict(orient='list')
     except FileNotFoundError as ex:
         print(f'{ex}: Файл не найден')
-        return pd.DataFrame()
+        return {}
 
-    if transactions_df.empty:
+    if not transactions:
         print('pd.DataFrame(): Пустой XLSX файл')
-        return pd.DataFrame()
+        return {}
 
-    return transactions_df
+    return transactions
 
 
-def get_cards(transactions: pd.DataFrame) -> list[dict]:
+def get_cards(transactions: dict) -> list[dict]:
     """
     Принимает DataFrame с транзакциями, возвращает список словарей
     last_digits, total_spent и cashback
     """
 
-    if transactions.empty:
+    if not transactions:
         return []
     else:
-        grouped_transactions_df = transactions.groupby(['Номер карты', 'Сумма операции'])
+        transactions_df = pd.DataFrame(transactions)
+
+        grouped_transactions_df = transactions_df.groupby(['Номер карты', 'Сумма операции'])
         last_digits_pattern = re.compile(r'\d+')
         amount_dict: dict[str, Union[str, float]] = {}
 
@@ -65,7 +67,7 @@ def get_cards(transactions: pd.DataFrame) -> list[dict]:
             if amount < 0:
                 amount_dict[last_card_digits] += amount
 
-        grouped_transactions_df = transactions.groupby(['Номер карты', 'Кэшбэк'])
+        grouped_transactions_df = transactions_df.groupby(['Номер карты', 'Кэшбэк'])
         cashback_dict: dict[str, Union[str, float]] = {}
 
         for card in grouped_transactions_df:
@@ -91,15 +93,17 @@ def get_cards(transactions: pd.DataFrame) -> list[dict]:
         return cards
 
 
-def get_top_transactions(transactions: pd.DataFrame) -> list[dict]:
+def get_top_transactions(transactions: dict) -> list[dict]:
     """
     Принимает DataFrame с транзакциями, возвращает список словарей
     date, amount, category и description
     """
-    if transactions.empty:
+    if not transactions:
         return []
     else:
-        sorted_transactions = transactions.sort_values(by='Сумма операции')
+        transactions_df = pd.DataFrame(transactions)
+
+        sorted_transactions = transactions_df.sort_values(by='Сумма операции')
 
         top_transactions = []
 
@@ -160,9 +164,9 @@ def get_stock_prices(path_to_user_settings_json: str) -> list[dict]:
     return stock_prices
 
 
-print(get_stock_prices('../data/user_settings.json'))
-print(get_currency_rates('../data/user_settings.json'))
-transactions_dataframe = get_data_frame_from_excel_file('../data/operations.xlsx')
-print(get_cards(transactions_dataframe))
-print(get_greeting('2025-05-11 00:00:00'))
-print(get_top_transactions(transactions_dataframe))
+# print(get_stock_prices('../data/user_settings.json'))
+# print(get_currency_rates('../data/user_settings.json'))
+# transactions_dataframe = get_data_frame_from_excel_file('../data/operations.xlsx')
+# print(get_cards(transactions_dataframe))
+# print(get_greeting('2025-05-11 00:00:00'))
+# print(get_top_transactions(transactions_dataframe))
