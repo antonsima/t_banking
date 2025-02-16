@@ -1,14 +1,10 @@
-import datetime
 import os
 from unittest.mock import patch
+
 from freezegun import freeze_time
 
-import pandas as pd
-import pytest
-
-from src.external_api import get_stock_price
-from src.utils import get_cards, get_data_frame_from_excel_file, get_greeting, get_stock_prices, get_top_transactions, \
-    get_currency_rates
+from src.utils import (get_cards, get_currency_rates, get_data_frame_from_excel_file, get_greeting, get_stock_prices,
+                       get_top_transactions)
 
 PATH_TO_EXCEL_FILE = os.path.join(os.path.dirname(__file__), "..", "tests", "reduced_operations.xlsx")
 PATH_TO_EMPTY_EXCEL_FILE = os.path.join(os.path.dirname(__file__), "..", "tests", "empty_operations.xlsx")

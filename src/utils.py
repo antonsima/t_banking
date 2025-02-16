@@ -2,13 +2,10 @@ import datetime
 import json
 import logging
 import os
-import re
-from typing import Union
 
 import pandas as pd
 
 from src.external_api import get_currency_rate, get_stock_price
-from tests.conftest import reduced_operations_df
 
 logger = logging.getLogger(__name__)
 path_to_log = os.path.join(os.path.dirname(__file__), "..", "logs", "utils.log")
@@ -181,6 +178,3 @@ def get_stock_prices(path_to_user_settings_json: str) -> list[dict]:
     logger.info("Программа завершена успешно")
 
     return stock_prices
-
-reduced_operations = 'C:/Users/Anton/Desktop/python_projects/homework/t_banking/tests/reduced_operations.xlsx'
-print(get_cards(get_data_frame_from_excel_file(reduced_operations)))

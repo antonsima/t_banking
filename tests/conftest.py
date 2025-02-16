@@ -8,6 +8,7 @@ import pytest
 def empty_df():
     return pd.DataFrame()
 
+
 @pytest.fixture
 def reduced_operations_df():
     return pd.DataFrame({

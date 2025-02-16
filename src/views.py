@@ -2,7 +2,6 @@ import datetime
 import json
 import logging
 import os
-import re
 
 import pandas as pd
 
@@ -70,5 +69,3 @@ def get_main_page(date: str, transactions: pd.DataFrame) -> str:
     logger.info("Программа завершена успешно")
 
     return main_page_json
-
-get_main_page(date_to_test, transactions_)
