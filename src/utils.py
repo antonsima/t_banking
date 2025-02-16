@@ -7,7 +7,8 @@ from typing import Union
 
 import pandas as pd
 
-from src.services import get_currency_rate, get_stock_price
+from src.external_api import get_currency_rate, get_stock_price
+from tests.conftest import reduced_operations_df
 
 logger = logging.getLogger(__name__)
 path_to_log = os.path.join(os.path.dirname(__file__), "..", "logs", "utils.log")
@@ -18,12 +19,12 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
 
-def get_greeting(date: str) -> str:
-    """ Принимает строку формата YYYY-MM-DD HH:MM:SS, возвращает строку с приветствием """
+def get_greeting() -> str:
+    """ Возвращает строку с приветствием """
 
     logger.info('Начало работы функции get_greeting')
 
-    date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+    date_obj = datetime.datetime.now()
 
     if 0 <= date_obj.hour <= 5:
         greeting = 'Доброй ночи'
@@ -39,27 +40,27 @@ def get_greeting(date: str) -> str:
     return greeting
 
 
-def get_data_frame_from_excel_file(path_to_excel_file: str) -> dict:
+def get_data_frame_from_excel_file(path_to_excel_file: str) -> pd.DataFrame:
     """ Принимает путь до xlsx-файла, возвращает DataFrame """
 
-    logger.info('Начало работы функции get_greeting')
+    logger.info('Начало работы функции get_data_frame_from_excel_file')
 
     try:
-        transactions = pd.read_excel(path_to_excel_file).to_dict(orient='list')
+        transactions = pd.read_excel(path_to_excel_file)
     except FileNotFoundError as ex:
         logger.error(f'Произошла ошибка, Файл не найден: {ex}')
-        return {}
+        return pd.DataFrame()
 
-    if not transactions:
+    if transactions.empty:
         logger.error('Произошла ошибка: pd.DataFrame(): Пустой XLSX файл')
-        return {}
+        return pd.DataFrame()
 
     logger.info("Программа завершена успешно")
 
     return transactions
 
 
-def get_cards(transactions: dict) -> list[dict]:
+def get_cards(transactions: pd.DataFrame) -> list[dict]:
     """
     Принимает DataFrame с транзакциями, возвращает список словарей
     last_digits, total_spent и cashback
@@ -67,48 +68,23 @@ def get_cards(transactions: dict) -> list[dict]:
 
     logger.info('Начало работы функции get_cards')
 
-    if not transactions:
-        logger.info("Пустой словарь транзакций. Программа завершена успешно")
+    if transactions.empty:
+        logger.info("Пустой DataFrame транзакций. Программа завершена успешно")
         return []
     else:
-        transactions_df = pd.DataFrame(transactions)
 
-        grouped_transactions_df = transactions_df.groupby(['Номер карты', 'Сумма операции'])
-        last_digits_pattern = re.compile(r'\d+')
-        amount_dict: dict[str, Union[str, float]] = {}
-
-        for card in grouped_transactions_df:
-            last_card_digits = last_digits_pattern.search(card[0][0]).group(0)
-
-            amount = card[0][1]
-
-            if amount_dict.get(last_card_digits) is None:
-                amount_dict[last_card_digits] = 0
-
-            if amount < 0:
-                amount_dict[last_card_digits] += amount
-
-        grouped_transactions_df = transactions_df.groupby(['Номер карты', 'Кэшбэк'])
-        cashback_dict: dict[str, Union[str, float]] = {}
-
-        for card in grouped_transactions_df:
-            last_card_digits = last_digits_pattern.search(card[0][0]).group(0)
-
-            cashback = card[0][1]
-
-            if cashback_dict.get(last_card_digits) is None:
-                cashback_dict[last_card_digits] = 0
-
-            cashback_dict[last_card_digits] += cashback
+        grouped_transactions_df = transactions.groupby('Номер карты')
+        total_info = grouped_transactions_df.agg(total_spent=('Сумма операции', 'sum'),
+                                                 cashback=('Сумма операции', lambda x: sum(x) // 100)).abs().round(2)
 
         cards = []
 
-        for card_num in amount_dict.keys():
-            total_spent = round(float(str(amount_dict.get(card_num))) * (-1), 2)
+        for index, row in total_info.iterrows():
 
-            card_info = {'last_digits': card_num,
-                         "total_spent": total_spent,
-                         "cashback": round(float(cashback_dict.get(card_num, 0)), 2)}
+            card_info = {'last_digits': str(index).replace('*', ''),
+                         "total_spent": float(str(row['total_spent'])),
+                         "cashback": float(str(row['cashback']))}
+
             cards.append(card_info)
 
         logger.info("Программа завершена успешно")
@@ -116,7 +92,7 @@ def get_cards(transactions: dict) -> list[dict]:
         return cards
 
 
-def get_top_transactions(transactions: dict) -> list[dict]:
+def get_top_transactions(transactions: pd.DataFrame) -> list[dict]:
     """
     Принимает DataFrame с транзакциями, возвращает список словарей
     date, amount, category и description
@@ -124,13 +100,11 @@ def get_top_transactions(transactions: dict) -> list[dict]:
 
     logger.info('Начало работы функции get_top_transactions')
 
-    if not transactions:
-        logger.info("Пустой словарь транзакций. Программа завершена успешно")
+    if transactions.empty:
+        logger.info("Пустой DataFrame транзакций. Программа завершена успешно")
         return []
     else:
-        transactions_df = pd.DataFrame(transactions)
-
-        sorted_transactions = transactions_df.sort_values(by='Сумма операции')
+        sorted_transactions = transactions.sort_values(by='Сумма операции')
 
         top_transactions = []
 
@@ -162,8 +136,12 @@ def get_currency_rates(path_to_user_settings_json: str) -> list[dict]:
 
     logger.info('Начало работы функции get_currency_rates')
 
-    with open(path_to_user_settings_json, 'r') as file:
-        currencies = json.load(file)
+    try:
+        with open(path_to_user_settings_json, 'r') as file:
+            currencies = json.load(file)
+    except FileNotFoundError as ex:
+        logger.error(f'Произошла ошибка, Файл не найден: {ex}')
+        return []
 
     currency_rates = []
 
@@ -183,8 +161,12 @@ def get_currency_rates(path_to_user_settings_json: str) -> list[dict]:
 def get_stock_prices(path_to_user_settings_json: str) -> list[dict]:
     logger.info('Начало работы функции get_stock_prices')
 
-    with open(path_to_user_settings_json, 'r') as file:
-        stocks = json.load(file)
+    try:
+        with open(path_to_user_settings_json, 'r') as file:
+            stocks = json.load(file)
+    except FileNotFoundError as ex:
+        logger.error(f'Произошла ошибка, Файл не найден: {ex}')
+        return []
 
     stock_prices = []
 
@@ -200,10 +182,5 @@ def get_stock_prices(path_to_user_settings_json: str) -> list[dict]:
 
     return stock_prices
 
-
-# print(get_stock_prices('../data/user_settings.json'))
-# print(get_currency_rates('../data/user_settings.json'))
-# transactions_dataframe = get_data_frame_from_excel_file('../data/operations.xlsx')
-# print(get_cards(transactions_dataframe))
-# print(get_greeting('2025-05-11 00:00:00'))
-# print(get_top_transactions(transactions_dataframe))
+reduced_operations = 'C:/Users/Anton/Desktop/python_projects/homework/t_banking/tests/reduced_operations.xlsx'
+print(get_cards(get_data_frame_from_excel_file(reduced_operations)))
