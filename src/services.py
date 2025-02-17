@@ -31,3 +31,4 @@ def get_cashback_categories_dict(transactions: list[dict], year: int, month: int
     cashback_categories = dict(cashback_categories_defdict)
 
     return cashback_categories
+
