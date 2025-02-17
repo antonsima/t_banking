@@ -5,6 +5,7 @@ import os
 
 import pandas as pd
 
+from src.services import get_cashback_categories_dict
 from src.utils import (get_cards, get_currency_rates, get_data_frame_from_excel_file, get_greeting, get_stock_prices,
                        get_top_transactions)
 
@@ -16,11 +17,11 @@ file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
-date_to_test = '2021-11-13 10:00:00'
+DATE = '2021-11-13 10:00:00'
 PATH_TO_EXCEL = os.path.join(os.path.dirname(__file__), "..", "data", "operations.xlsx")
 PATH_TO_USER_SETTINGS = os.path.join(os.path.dirname(__file__), "..", "data", "user_settings.json")
-transactions_ = get_data_frame_from_excel_file(PATH_TO_EXCEL)
-
+TRANSACTIONS = get_data_frame_from_excel_file(PATH_TO_EXCEL)
+TRANSACTIONS_DICT = TRANSACTIONS.to_dict(orient='records')
 
 def get_main_page(date: str, transactions: pd.DataFrame) -> str:
     """
@@ -69,3 +70,23 @@ def get_main_page(date: str, transactions: pd.DataFrame) -> str:
     logger.info("Программа завершена успешно")
 
     return main_page_json
+
+
+def get_cashback_categories(transactions: list[dict], year: int, month: int) -> str:
+    """
+    На вход поступают транзакции в виде списка словарей,
+    год и месяц в формате целых чисел, на выходе словарь с категориями и кэшбэком по ним
+    """
+
+    logger.info('Начало работы функции get_cashback_categories')
+
+    cashback_categories = get_cashback_categories_dict(transactions, year, month)
+    cashback_categories_json = json.dumps(cashback_categories, ensure_ascii=False)
+
+    with open('../json/cashback_categories.json', 'w', encoding='utf-8') as file:
+        json.dump(cashback_categories, file, ensure_ascii=False)
+
+    logger.info('JSON-ответ записан в файл "../json/cashback_categories.json"')
+    logger.info("Программа завершена успешно")
+
+    return cashback_categories_json
