@@ -5,12 +5,13 @@ import os
 
 import pandas as pd
 
+from config import LOGS_DIR, DATA_DIR
 from src.services import get_cashback_categories_dict
 from src.utils import (get_cards, get_currency_rates, get_data_frame_from_excel_file, get_greeting, get_stock_prices,
                        get_top_transactions)
 
 logger = logging.getLogger(__name__)
-path_to_log = os.path.join(os.path.dirname(__file__), "..", "logs", "views.log")
+path_to_log = os.path.join(LOGS_DIR, "views.log")
 file_handler = logging.FileHandler(path_to_log, "w", encoding="utf-8")
 file_formatter = logging.Formatter('%(asctime)s %(filename)s %(levelname)s: %(message)s')
 file_handler.setFormatter(file_formatter)
@@ -18,8 +19,8 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
 DATE = '2021-11-13 10:00:00'
-PATH_TO_EXCEL = os.path.join(os.path.dirname(__file__), "..", "data", "operations.xlsx")
-PATH_TO_USER_SETTINGS = os.path.join(os.path.dirname(__file__), "..", "data", "user_settings.json")
+PATH_TO_EXCEL = os.path.join(DATA_DIR, "operations.xlsx")
+PATH_TO_USER_SETTINGS = os.path.join(DATA_DIR, "user_settings.json")
 TRANSACTIONS = get_data_frame_from_excel_file(PATH_TO_EXCEL)
 TRANSACTIONS_DICT = TRANSACTIONS.to_dict(orient='records')
 

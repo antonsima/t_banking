@@ -1,10 +1,11 @@
 import os
 
+from config import DATA_DIR
 from src.utils import get_data_frame_from_excel_file
 from src.views import get_main_page, get_cashback_categories
 
 DATE_TO_TEST = '2021-11-13 10:00:00'
-PATH_TO_EXCEL = os.path.join(os.path.dirname(__file__), "..", "data", "operations.xlsx")
+PATH_TO_EXCEL = os.path.join(DATA_DIR, "operations.xlsx")
 TRANSACTIONS = get_data_frame_from_excel_file(PATH_TO_EXCEL)
 TRANSACTIONS_DICT = TRANSACTIONS.to_dict(orient='records')
 
