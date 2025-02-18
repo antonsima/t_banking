@@ -1,7 +1,7 @@
 import os
 
 from config import DATA_DIR
-from src.reports import get_report_func_result, spending_by_category
+from src.reports import spending_by_category
 from src.utils import get_data_frame_from_excel_file
 from src.views import get_cashback_categories, get_main_page
 

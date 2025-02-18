@@ -1,13 +1,16 @@
 import datetime
 import logging
 import os
-from typing import Optional
-from dateutil.relativedelta import relativedelta
+from functools import wraps
+from typing import Callable, Optional, ParamSpec, TypeVar
 
 import pandas as pd
-from functools import wraps
+from dateutil.relativedelta import relativedelta
 
 from config import LOGS_DIR
+
+P = ParamSpec('P')
+T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 path_to_log = os.path.join(LOGS_DIR, "reports.log")
@@ -18,7 +21,8 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
 
-def get_report_func_result(report_name='func_result_report.txt'):
+def get_report_func_result(report_name: str = 'func_result_report.txt') -> (
+        Callable)[[Callable[P, T]], Callable[P, str]]:
     """
     Декоратор вывода результата функции
     """
@@ -27,9 +31,9 @@ def get_report_func_result(report_name='func_result_report.txt'):
 
     path_to_report = os.path.join(LOGS_DIR, report_name)
 
-    def decorator(func):
+    def decorator(func: Callable[P, T]) -> Callable[P, str]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> str:
             result = func(*args, **kwargs)
 
             logger.debug(f"result = {result}")
@@ -40,13 +44,7 @@ def get_report_func_result(report_name='func_result_report.txt'):
             logger.info('return func result')
 
             return f'Результат функции: {result}'
-
-        logger.info('return wrapper')
-
         return wrapper
-
-    logger.info('return decorator')
-
     return decorator
 
 
