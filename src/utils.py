@@ -157,6 +157,7 @@ def get_currency_rates(path_to_user_settings_json: str) -> list[dict]:
 
 
 def get_stock_prices(path_to_user_settings_json: str) -> list[dict]:
+    """ Принимает путь до пользовательских настроек, возвращает стоимость акций в виде списка словарей """
     logger.info('Начало работы функции get_stock_prices')
 
     try:

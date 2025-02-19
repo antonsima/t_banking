@@ -2,13 +2,18 @@ import datetime
 import json
 import logging
 import os
+from functools import wraps
+from typing import Callable, ParamSpec, TypeVar
 
 import pandas as pd
 
-from config import DATA_DIR, LOGS_DIR
+from config import DATA_DIR, JSON_DIR, LOGS_DIR
 from src.services import get_cashback_categories_dict
 from src.utils import (get_cards, get_currency_rates, get_data_frame_from_excel_file, get_greeting, get_stock_prices,
                        get_top_transactions)
+
+P = ParamSpec('P')
+T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 path_to_log = os.path.join(LOGS_DIR, "views.log")
@@ -92,3 +97,28 @@ def get_cashback_categories(transactions: list[dict], year: int, month: int) -> 
     logger.info("Программа завершена успешно")
 
     return cashback_categories_json
+
+
+def get_report_func_result(report_name: str = 'func_result_report.json') -> (
+        Callable)[[Callable[P, pd.DataFrame]], Callable[P, pd.DataFrame]]:
+    """
+    Декоратор вывода результата функции
+    """
+
+    logger.info('Декоратор get_report_func_result')
+
+    path_to_report = os.path.join(JSON_DIR, report_name)
+
+    def decorator(func: Callable[P, pd.DataFrame]) -> Callable[P, pd.DataFrame]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> pd.DataFrame:
+            result = func(*args, **kwargs)
+
+            logger.debug(f"result = {result}")
+
+            result.to_json(path_to_report, orient="records", force_ascii=False)
+
+            logger.info('return func result')
+            return result
+        return wrapper
+    return decorator
