@@ -5,10 +5,11 @@ import os
 
 import pandas as pd
 
+from config import LOGS_DIR
 from src.external_api import get_currency_rate, get_stock_price
 
 logger = logging.getLogger(__name__)
-path_to_log = os.path.join(os.path.dirname(__file__), "..", "logs", "utils.log")
+path_to_log = os.path.join(LOGS_DIR, "utils.log")
 file_handler = logging.FileHandler(path_to_log, "w", encoding="utf-8")
 file_formatter = logging.Formatter('%(asctime)s %(filename)s %(levelname)s: %(message)s')
 file_handler.setFormatter(file_formatter)
@@ -156,6 +157,7 @@ def get_currency_rates(path_to_user_settings_json: str) -> list[dict]:
 
 
 def get_stock_prices(path_to_user_settings_json: str) -> list[dict]:
+    """ Принимает путь до пользовательских настроек, возвращает стоимость акций в виде списка словарей """
     logger.info('Начало работы функции get_stock_prices')
 
     try:

@@ -1,10 +1,12 @@
-import os
-from collections import defaultdict
 import datetime as dt
+from collections import defaultdict
 
-import pandas as pd
 
-from src.utils import get_data_frame_from_excel_file
+def filter_by_date(transaction: dict, year: int, month: int) -> bool:
+    transaction_month = dt.datetime.strptime(transaction['Дата операции'], '%d.%m.%Y %H:%M:%S').month
+    transaction_year = dt.datetime.strptime(transaction['Дата операции'], '%d.%m.%Y %H:%M:%S').year
+
+    return transaction_month == month and transaction_year == year
 
 
 def get_cashback_categories_dict(transactions: list[dict], year: int, month: int) -> dict:
@@ -13,22 +15,18 @@ def get_cashback_categories_dict(transactions: list[dict], year: int, month: int
     год и месяц в формате целых чисел, на выходе словарь с категориями и кэшбэком по ним
     """
 
-    transactions_dataframe = pd.DataFrame(transactions)
-    transactions_dataframe['Дата операции'] = pd.to_datetime(transactions_dataframe['Дата операции'], dayfirst=True)
-    filtered_transactions_df = transactions_dataframe[
-        (transactions_dataframe['Дата операции'].dt.month == month) & (transactions_dataframe[
-                                                                           'Дата операции'].dt.year == year)]
+    filtered_transactions = list(filter(lambda transaction: filter_by_date(transaction, year, month), transactions))
 
-    cashback_categories_defdict = defaultdict(int)
+    cashback_categories_def_dict: defaultdict = defaultdict(int)
 
-    for index, row in filtered_transactions_df.iterrows():
-        if row['Кэшбэк'] > 0:
-            category = row['Категория']
-            cashback = row['Кэшбэк']
+    for transaction in filtered_transactions:
+        if 0 < transaction['Кэшбэк'] > 0:
+            category = transaction['Категория']
+            cashback = transaction['Кэшбэк']
 
-            cashback_categories_defdict[category] += cashback
+            cashback_categories_def_dict[category] += cashback
 
-    cashback_categories = dict(cashback_categories_defdict)
+    cashback_categories = dict(cashback_categories_def_dict)
+    sorted_cashback_categories = dict(sorted(cashback_categories.items(), key=lambda item: item[1], reverse=True))
 
-    return cashback_categories
-
+    return sorted_cashback_categories

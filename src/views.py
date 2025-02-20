@@ -2,15 +2,21 @@ import datetime
 import json
 import logging
 import os
+from functools import wraps
+from typing import Callable, ParamSpec, TypeVar
 
 import pandas as pd
 
+from config import DATA_DIR, JSON_DIR, LOGS_DIR
 from src.services import get_cashback_categories_dict
 from src.utils import (get_cards, get_currency_rates, get_data_frame_from_excel_file, get_greeting, get_stock_prices,
                        get_top_transactions)
 
+P = ParamSpec('P')
+T = TypeVar('T')
+
 logger = logging.getLogger(__name__)
-path_to_log = os.path.join(os.path.dirname(__file__), "..", "logs", "views.log")
+path_to_log = os.path.join(LOGS_DIR, "views.log")
 file_handler = logging.FileHandler(path_to_log, "w", encoding="utf-8")
 file_formatter = logging.Formatter('%(asctime)s %(filename)s %(levelname)s: %(message)s')
 file_handler.setFormatter(file_formatter)
@@ -18,10 +24,11 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
 DATE = '2021-11-13 10:00:00'
-PATH_TO_EXCEL = os.path.join(os.path.dirname(__file__), "..", "data", "operations.xlsx")
-PATH_TO_USER_SETTINGS = os.path.join(os.path.dirname(__file__), "..", "data", "user_settings.json")
+PATH_TO_EXCEL = os.path.join(DATA_DIR, "operations.xlsx")
+PATH_TO_USER_SETTINGS = os.path.join(DATA_DIR, "user_settings.json")
 TRANSACTIONS = get_data_frame_from_excel_file(PATH_TO_EXCEL)
 TRANSACTIONS_DICT = TRANSACTIONS.to_dict(orient='records')
+
 
 def get_main_page(date: str, transactions: pd.DataFrame) -> str:
     """
@@ -90,3 +97,28 @@ def get_cashback_categories(transactions: list[dict], year: int, month: int) -> 
     logger.info("Программа завершена успешно")
 
     return cashback_categories_json
+
+
+def get_report_func_result(report_name: str = 'func_result_report.json') -> (
+        Callable)[[Callable[P, pd.DataFrame]], Callable[P, pd.DataFrame]]:
+    """
+    Декоратор вывода результата функции
+    """
+
+    logger.info('Декоратор get_report_func_result')
+
+    path_to_report = os.path.join(JSON_DIR, report_name)
+
+    def decorator(func: Callable[P, pd.DataFrame]) -> Callable[P, pd.DataFrame]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> pd.DataFrame:
+            result = func(*args, **kwargs)
+
+            logger.debug(f"result = {result}")
+
+            result.to_json(path_to_report, orient="records", force_ascii=False)
+
+            logger.info('return func result')
+            return result
+        return wrapper
+    return decorator

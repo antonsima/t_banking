@@ -5,8 +5,10 @@ from typing import Any, Union
 import requests
 from dotenv import load_dotenv
 
+from config import LOGS_DIR
+
 logger = logging.getLogger(__name__)
-path_to_log = os.path.join(os.path.dirname(__file__), "..", "logs", "services.log")
+path_to_log = os.path.join(LOGS_DIR, "services.log")
 file_handler = logging.FileHandler(path_to_log, "w", encoding="utf-8")
 file_formatter = logging.Formatter('%(asctime)s %(filename)s %(levelname)s: %(message)s')
 file_handler.setFormatter(file_formatter)
